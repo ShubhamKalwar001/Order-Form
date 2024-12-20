@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Form</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    form {
+      max-width: 600px;
+      width: 90%;
+      padding: 20px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6559d2, #6559d2, #6559d2, #6559d2);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      color: #ffffff;
+    }
+
+    form h1 {
+      text-align: center;
+      margin: 0 0 20px;
+      padding: 10px 0;
+      border-bottom: 2px solid #ffffff;
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: none;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #ffffff;
+      color: #ff6a5f;
+      padding: 12px 20px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #ff914d;
+      color: #ffffff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table, th, td {
+      border: 1px solid #ffffff;
+    }
+
+    th, td {
+      padding: 8px;
+      text-align: left;
+      color: #ffffff;
+    }
+
+    input.qty-input {
+      width: 60px;
+      border: none;
+      border-radius: 4px;
+    }
+
+    #successMessage {
+      padding: 20px;
+      background-color: #4CAF50;
+      color: white;
+      text-align: center;
+      font-size: 18px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <form id="productForm" onsubmit="submitForm(event)">
+    <h1>Order Form</h1>
+    <label for="clientName">Client Name</label>
+    <select id="clientName" name="clientName" required onchange="autoFillDetails()"></select>
+
+    <label for="managerName">Manager Name</label>
+    <select id="managerName" name="managerName" required></select>
+
+    <label for="soName">SO Name</label>
+    <select id="soName" name="soName" required></select>
+
+    <label for="areaName">Area Name</label>
+    <select id="areaName" name="areaName" required></select>
+
+    <h2>Product Details</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Sr No</th>
+          <th>Code</th>
+          <th>Product Name</th>
+          <th>Rate</th>
+          <th>Qty</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody id="productTableBody">
+        <!-- Populated by JavaScript -->
+      </tbody>
+    </table>
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <script>
+    let allData = {};  // Store the autofill data for client -> manager, so, area
+
+    // Sample data for client -> manager, so, area mapping
+    const data = {
+      clientNames: ["Goel Enterprise", "Amit Traders", "Sharma Corp"],
+      managerNames: ["Rahul Mehra", "Sushil Kumar", "Anil Sharma"],
+      soNames: ["Amit", "Ravi", "Vikas"],
+      areaNames: ["Muzaffarnagar", "Meerut", "Ghaziabad"]
+    };
+
+    function loadDropdownData() {
+      populateDropdown('clientName', data.clientNames);
+    }
+
+    function populateDropdown(id, items) {
+      const dropdown = document.getElementById(id);
+      dropdown.innerHTML = '<option value="">Select</option>';
+      items.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        dropdown.appendChild(option);
+      });
+    }
+
+    function loadSheetData() {
+      // Hardcoded product data to simulate product sheet data
+      const rows = [
+        { srNo: 1, code: 'P001', productName: 'Product A', rate: 50 },
+        { srNo: 2, code: 'P002', productName: 'Product B', rate: 100 },
+        { srNo: 3, code: 'P003', productName: 'Product C', rate: 150 }
+      ];
+      populateTable(rows);
+    }
+
+    function populateTable(rows) {
+      const tableBody = document.getElementById('productTableBody');
+      tableBody.innerHTML = '';
+
+      rows.forEach(row => {
+        const { srNo, code, productName, rate } = row;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${srNo || ''}</td>
+          <td>${code || ''}</td>
+          <td>${productName || ''}</td>
+          <td>${rate || ''}</td>
+          <td><input type="number" class="qty-input" data-rate="${rate}" oninput="calculateTotal(this)"></td>
+          <td class="total-cell">0</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function calculateTotal(input) {
+      const rate = parseFloat(input.getAttribute('data-rate')) || 0;
+      const qty = parseFloat(input.value) || 0;
+      const total = rate * qty;
+
+      const totalCell = input.closest('tr').querySelector('.total-cell');
+      totalCell.textContent = total.toFixed(2);
+    }
+
+    function autoFillDetails() {
+      const clientName = document.getElementById('clientName').value;
+
+      if (clientName) {
+        const clientIndex = data.clientNames.indexOf(clientName);
+
+        if (clientIndex !== -1) {
+          // Set the values for Manager, SO, and Area based on the selected client
+          document.getElementById('managerName').value = data.managerNames[clientIndex];
+          document.getElementById('soName').value = data.soNames[clientIndex];
+          document.getElementById('areaName').value = data.areaNames[clientIndex];
+        }
+      }
+    }
+
+    function submitForm(event) {
+      event.preventDefault();
+
+      // Show success message immediately
+      const successMessage = document.createElement('div');
+      successMessage.id = 'successMessage';
+      successMessage.innerText = 'Data Submitted Successfully!';
+      document.body.appendChild(successMessage);
+
+      // Gather form data
+      const formData = {
+        clientName: document.getElementById('clientName').value,
+        managerName: document.getElementById('managerName').value,
+        soName: document.getElementById('soName').value,
+        areaName: document.getElementById('areaName').value,
+        products: []
+      };
+
+      const rows = document.querySelectorAll('#productTableBody tr');
+      rows.forEach(row => {
+        const qty = row.querySelector('.qty-input').value;
+        if (qty > 0) {
+          formData.products.push({
+            srNo: row.cells[0].textContent,
+            code: row.cells[1].textContent,
+            productName: row.cells[2].textContent,
+            rate: parseFloat(row.cells[3].textContent),
+            qty: parseInt(qty),
+            total: parseFloat(row.cells[5].textContent)
+          });
+        }
+      });
+
+      // Simulating form submission with a delay
+      setTimeout(() => {
+        window.location.href = '/confirmation.html';  // Redirect after form submission
+      }, 2000);
+    }
+
+    window.onload = () => {
+      loadDropdownData();
+      loadSheetData();
+    };
+  </script>
+</body>
+</html>
